@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-insert-country-data
+      author: Vladislav Stepanov
+      comment: Insert initial country data from CSV
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM country
+      changes:
+        - loadData:
+            file: db/changelog/data/country.csv
+            tableName: country
+            separator: ";"
+            relativeToChangelogFile: false
+            columns:
+              - column:
+                  name: id
+                  type: string
+              - column:
+                  name: name
+                  type: string
+              - column:
+                  name: is_active
+                  type: boolean
+                  defaultValueBoolean: true
+      rollback:
+        - delete:
+            tableName: country
+            where: "1=1"
