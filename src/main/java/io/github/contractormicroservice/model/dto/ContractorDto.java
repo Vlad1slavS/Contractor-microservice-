@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
  */
 @Data
 @NoArgsConstructor
-public class ContractorDto {
+public class ContractorDTO {
 
     private String id;
 
@@ -24,10 +24,10 @@ public class ContractorDto {
     private String inn;
     private String ogrn;
     private String country;
-    private Integer industry;
+    private Long industry;
 
     @JsonProperty("org_form")
-    private Integer orgForm;
+    private Long orgForm;
 
 
 }

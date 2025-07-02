@@ -44,18 +44,23 @@ public class CountryService {
 
         Optional<Country> country = countryRepository.findById(countryDTO.getId());
 
+        Country newCountry;
+
         if (country.isPresent()) {
-            country.get().setName(countryDTO.getName());
-            countryRepository.save(country.get());
-            return CountryDTO.fromEntity(country.get());
+            newCountry = country.get();
+            newCountry.setName(countryDTO.getName());
+            newCountry.markAsExisting();
         } else {
-            Country newCountry = Country.builder()
+            newCountry = Country.builder()
                     .id(countryDTO.getId())
                     .name(countryDTO.getName())
                     .build();
-            countryRepository.createCountry(newCountry);
-            return CountryDTO.fromEntity(newCountry);
+
+            newCountry.markAsNew();
         }
+
+        Country savedCountry = countryRepository.save(newCountry);
+        return CountryDTO.fromEntity(savedCountry);
 
     }
 

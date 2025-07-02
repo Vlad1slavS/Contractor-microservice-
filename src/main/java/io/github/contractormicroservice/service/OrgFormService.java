@@ -42,22 +42,29 @@ public class OrgFormService {
 
     public OrgFormDTO save(OrgFormDTO orgFormDTO) {
 
+        OrgForm newOrgForm;
+
         if (orgFormDTO.getId() != null) {
             Optional<OrgForm> existingOrgForm = orgFormRepository.findById(orgFormDTO.getId());
 
             if (existingOrgForm.isPresent()) {
-                existingOrgForm.get().setName(orgFormDTO.getName());
-                orgFormRepository.save(existingOrgForm.get());
-                return OrgFormDTO.fromEntity(existingOrgForm.get());
+                newOrgForm = existingOrgForm.get();
+                newOrgForm.setName(orgFormDTO.getName());
+                newOrgForm.markAsExisting();
             } else {
-                throw new EntityNotFoundException("OrgForm not found with id: " + orgFormDTO.getId());
+                throw new EntityNotFoundException("Org form not found with id: " + orgFormDTO.getId());
             }
+        } else {
+            newOrgForm = OrgForm.builder()
+                    .name(orgFormDTO.getName())
+                    .build();
+
+            newOrgForm.markAsNew();
         }
-        OrgForm newOrgForm = OrgForm.builder()
-                .name(orgFormDTO.getName())
-                .build();
-        OrgForm savedOrgForm = orgFormRepository.createOrgForm(newOrgForm);
+
+        OrgForm savedOrgForm = orgFormRepository.save(newOrgForm);
         return OrgFormDTO.fromEntity(savedOrgForm);
+
     }
 
 }

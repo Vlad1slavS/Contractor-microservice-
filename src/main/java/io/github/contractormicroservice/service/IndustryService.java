@@ -42,22 +42,29 @@ public class IndustryService {
 
     public IndustryDTO save(IndustryDTO industryDTO) {
 
+        Industry newIndustry;
+
         if (industryDTO.getId() != null) {
             Optional<Industry> existingIndustry = industryRepository.findById(industryDTO.getId());
 
             if (existingIndustry.isPresent()) {
-                existingIndustry.get().setName(industryDTO.getName());
-                industryRepository.save(existingIndustry.get());
-                return IndustryDTO.fromEntity(existingIndustry.get());
+                newIndustry = existingIndustry.get();
+                newIndustry.setName(industryDTO.getName());
+                newIndustry.markAsExisting();
             } else {
                 throw new EntityNotFoundException("Industry not found with id: " + industryDTO.getId());
             }
+        } else {
+            newIndustry = Industry.builder()
+                    .name(industryDTO.getName())
+                    .build();
+
+            newIndustry.markAsNew();
         }
-        Industry newIndustry = Industry.builder()
-                .name(industryDTO.getName())
-                .build();
-        Industry savedIndustry = industryRepository.createIndustry(newIndustry);
+
+        Industry savedIndustry = industryRepository.save(newIndustry);
         return IndustryDTO.fromEntity(savedIndustry);
+
     }
 
 }
