@@ -15,7 +15,7 @@ import org.springframework.data.domain.Persistable;
 import java.time.LocalDateTime;
 
 /**
- * Класс модели контрагента
+ * Класс модели контрагента (со связанными сущностями)
  */
 @Data
 @NoArgsConstructor

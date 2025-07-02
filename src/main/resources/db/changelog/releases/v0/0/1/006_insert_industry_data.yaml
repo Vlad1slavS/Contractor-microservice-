@@ -2,12 +2,7 @@ databaseChangeLog:
   - changeSet:
       id: 006-insert-industry-data
       author: Vladislav Stepanov
-      comment: Insert initial industry data from CSV
-      preConditions:
-        - onFail: MARK_RAN
-        - sqlCheck:
-            expectedResult: 0
-            sql: SELECT COUNT(*) FROM industry
+      comment: Вставка данных в таблицу industry
       changes:
         - loadData:
             file: db/changelog/data/industry.csv
