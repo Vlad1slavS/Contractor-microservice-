@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-country-table
+      author: Vladislav Stepanov
+      comment: Create country table
+      changes:
+        - createTable:
+            tableName: country
+            columns:
+              - column:
+                  name: id
+                  type: text
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_active
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+      rollback:
+        - dropTable:
+            tableName: country

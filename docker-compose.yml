@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: contractor-postgres
+    environment:
+      POSTGRES_USER: contractor
+      POSTGRES_DB: contractor_db
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U contractor -d contractor_db"]
+      interval: 10s
+      timeout: 5s
+    restart: unless-stopped
+
+  app:
+    build: .
+    container_name: contractor-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/contractor_db
+      SPRING_DATASOURCE_USERNAME: contractor
+      SPRING_DATASOURCE_PASSWORD: 1234
+
+      SPRING_LIQUIBASE_CHANGE-LOG: classpath:db/changelog/db.changelog-master.yaml
+
+      LOGGING_LEVEL_ROOT: INFO
+      LOGGING_LEVEL_IO_GITHUB_CONTRACTORMICROSERVICE: DEBUG
+      LOGGING_PATTERN_CONSOLE: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+      LOGGING_PATTERN_FILE: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+volumes:
+  postgres_data:

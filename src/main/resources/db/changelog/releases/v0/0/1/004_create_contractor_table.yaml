@@ -1,0 +1,167 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-contractor-table
+      author: Vladislav Stepanov
+      comment: Create contractor table
+      changes:
+        - createTable:
+            tableName: contractor
+            columns:
+              - column:
+                  name: id
+                  type: varchar(12)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: parent_id
+                  type: varchar(12)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: name
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name_full
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: inn
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: ogrn
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: country
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: industry
+                  type: int4
+                  constraints:
+                    nullable: true
+              - column:
+                  name: org_form
+                  type: int4
+                  constraints:
+                    nullable: true
+              - column:
+                  name: create_date
+                  type: timestamp
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: modify_date
+                  type: timestamp
+                  constraints:
+                    nullable: true
+              - column:
+                  name: create_user_id
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: modify_user_id
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: is_active
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: contractor
+            baseColumnNames: parent_id
+            constraintName: fk_contractor_parent
+            referencedTableName: contractor
+            referencedColumnNames: id
+            onDelete: SET NULL
+
+        - addForeignKeyConstraint:
+            baseTableName: contractor
+            baseColumnNames: country
+            constraintName: fk_contractor_country
+            referencedTableName: country
+            referencedColumnNames: id
+            onDelete: SET NULL
+
+        - addForeignKeyConstraint:
+            baseTableName: contractor
+            baseColumnNames: industry
+            constraintName: fk_contractor_industry
+            referencedTableName: industry
+            referencedColumnNames: id
+            onDelete: SET NULL
+
+        - addForeignKeyConstraint:
+            baseTableName: contractor
+            baseColumnNames: org_form
+            constraintName: fk_contractor_org_form
+            referencedTableName: org_form
+            referencedColumnNames: id
+            onDelete: SET NULL
+
+        - createIndex:
+            tableName: contractor
+            indexName: idx_contractor_parent_id
+            columns:
+              - column:
+                  name: parent_id
+
+        - createIndex:
+            tableName: contractor
+            indexName: idx_contractor_country
+            columns:
+              - column:
+                  name: country
+
+        - createIndex:
+            tableName: contractor
+            indexName: idx_contractor_industry
+            columns:
+              - column:
+                  name: industry
+
+        - createIndex:
+            tableName: contractor
+            indexName: idx_contractor_org_form
+            columns:
+              - column:
+                  name: org_form
+
+        - createIndex:
+            tableName: contractor
+            indexName: idx_contractor_is_active
+            columns:
+              - column:
+                  name: is_active
+
+        - createIndex:
+            tableName: contractor
+            indexName: idx_contractor_inn
+            columns:
+              - column:
+                  name: inn
+
+        - createIndex:
+            tableName: contractor
+            indexName: idx_contractor_ogrn
+            columns:
+              - column:
+                  name: ogrn
+
+      rollback:
+        - dropTable:
+            tableName: contractor
