@@ -3,7 +3,7 @@ package io.github.contractormicroservice.controller;
 import io.github.contractormicroservice.exception.EntityNotFoundException;
 import io.github.contractormicroservice.model.dto.ContractorDTO;
 import io.github.contractormicroservice.model.entity.Contractor;
-import io.github.contractormicroservice.model.entity.ContractorSearch;
+import io.github.contractormicroservice.model.entity.ContractorFilter;
 import io.github.contractormicroservice.model.entity.Pagination;
 import io.github.contractormicroservice.service.ContractorService;
 import io.github.contractormicroservice.validator.ContractorValidator;
@@ -29,13 +29,13 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/contractor")
 @Slf4j
-public class ContactorController {
+public class ContractorController {
 
     private final ContractorService contractorService;
 
     private final ContractorValidator contractorValidator;
 
-    public ContactorController(ContractorService contractorService, ContractorValidator contractorValidator) {
+    public ContractorController(ContractorService contractorService, ContractorValidator contractorValidator) {
         this.contractorService = contractorService;
         this.contractorValidator = contractorValidator;
     }
@@ -56,7 +56,7 @@ public class ContactorController {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
                     .body(Map.of(
-                            "error", "Ошибка поиска страны",
+                            "error", "Ошибка поиска контрагента по id",
                             "message", e.getMessage(),
                             "timestamp", LocalDateTime.now(),
                             "status", 404
@@ -104,7 +104,7 @@ public class ContactorController {
         try {
             Contractor savedContractor = contractorService.save(contractorDto);
             log.info("Contractor saved: {}", savedContractor);
-            return ResponseEntity.ok(savedContractor);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedContractor);
         } catch (EntityNotFoundException e) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
@@ -118,7 +118,7 @@ public class ContactorController {
     }
 
     @PostMapping("/search")
-    public ResponseEntity<?> searchContractors(@RequestBody(required = false) ContractorSearch searchRequest,
+    public ResponseEntity<?> searchContractors(@RequestBody(required = false) ContractorFilter searchRequest,
                                                @RequestParam(defaultValue = "0") Integer page,
                                                @RequestParam(defaultValue = "10") Integer limit) {
         try {

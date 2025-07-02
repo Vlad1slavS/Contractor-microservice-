@@ -3,7 +3,7 @@ package io.github.contractormicroservice.service;
 import io.github.contractormicroservice.exception.EntityNotFoundException;
 import io.github.contractormicroservice.model.dto.ContractorDTO;
 import io.github.contractormicroservice.model.entity.Contractor;
-import io.github.contractormicroservice.model.entity.ContractorSearch;
+import io.github.contractormicroservice.model.entity.ContractorFilter;
 import io.github.contractormicroservice.model.entity.Pagination;
 import io.github.contractormicroservice.repository.contractor.ContractorRepository;
 import io.github.contractormicroservice.repository.country.CountryRepository;
@@ -11,6 +11,7 @@ import io.github.contractormicroservice.repository.industry.IndustryRepository;
 import io.github.contractormicroservice.repository.orgForm.OrgFormRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -52,12 +53,11 @@ public class ContractorService {
 
         if (contractor.isPresent()) {
             newContractor = contractor.get();
-            newContractor.setName(contractorDTO.getName());
-            newContractor.setParentId(contractorDTO.getParentId());
-            newContractor.setName(contractorDTO.getName());
-            newContractor.setNameFull(contractorDTO.getNameFull());
-            newContractor.setInn(contractorDTO.getInn());
-            newContractor.setOgrn(contractorDTO.getOgrn());
+            newContractor.setName(sanitize(contractorDTO.getName()));
+            newContractor.setParentId(sanitize(contractorDTO.getParentId()));
+            newContractor.setNameFull(sanitize(contractorDTO.getNameFull()));
+            newContractor.setInn(sanitize(contractorDTO.getInn()));
+            newContractor.setOgrn(sanitize(contractorDTO.getOgrn()));
             newContractor.setCountry(contractorDTO.getCountry());
             newContractor.setIndustry(contractorDTO.getIndustry());
             newContractor.setOrgForm(contractorDTO.getOrgForm());
@@ -66,16 +66,16 @@ public class ContractorService {
         } else {
             newContractor = Contractor.builder()
                     .id(contractorDTO.getId())
-                    .parentId(contractorDTO.getParentId())
-                    .name(contractorDTO.getName())
-                    .nameFull(contractorDTO.getNameFull())
-                    .inn(contractorDTO.getInn())
-                    .ogrn(contractorDTO.getOgrn())
-                    .createDate(LocalDateTime.now())
-                    .modifyDate(LocalDateTime.now())
+                    .parentId(sanitize(contractorDTO.getParentId()))
+                    .name(sanitize(contractorDTO.getName()))
+                    .nameFull(sanitize(contractorDTO.getNameFull()))
+                    .inn(sanitize(contractorDTO.getInn()))
+                    .ogrn(sanitize(contractorDTO.getOgrn()))
                     .country(contractorDTO.getCountry())
                     .industry(contractorDTO.getIndustry())
                     .orgForm(contractorDTO.getOrgForm())
+                    .createDate(LocalDateTime.now())
+                    .modifyDate(LocalDateTime.now())
                     .build();
 
             newContractor.markAsNew();
@@ -87,8 +87,17 @@ public class ContractorService {
 
     }
 
+    /**
+     * Метод для проверки на пустую строку (если строка пустая, то возвращаем null для вставки в БД)
+     * @param value - проверяемая строка
+     * @return результат
+     */
+    private String sanitize(String value) {
+        return StringUtils.hasText(value) ? value : null;
+    }
+
     @Transactional
-    public Pagination searchContractors(ContractorSearch searchRequest, Integer page, Integer limit) {
+    public Pagination searchContractors(ContractorFilter searchRequest, Integer page, Integer limit) {
 
         if (page < 0) {
             page = 0;
@@ -101,6 +110,10 @@ public class ContractorService {
         return contractorRepository.searchContractors(searchRequest, page, limit);
     }
 
+    /**
+     * Валидация существования связанных сущностей при сохранении
+     * @param contractor - входная сущность
+     */
     private void validateFK(Contractor contractor) {
         if (contractor.getCountry() != null && !contractor.getCountry().isEmpty()) {
             if (!countryRepository.existsById(contractor.getCountry())) {

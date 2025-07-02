@@ -3,6 +3,9 @@ package io.github.contractormicroservice.validator;
 import io.github.contractormicroservice.model.dto.ContractorDTO;
 import org.springframework.stereotype.Component;
 
+/**
+ * Валидация входных данных контрагента (обязательные поля)
+ */
 @Component
 public class ContractorValidator {
 

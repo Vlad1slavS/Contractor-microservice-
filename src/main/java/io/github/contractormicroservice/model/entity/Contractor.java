@@ -39,6 +39,7 @@ public class Contractor implements Persistable<String> {
     private String modifyUserId;
 
     @Builder.Default
+    @JsonIgnore
     private Boolean isActive = true;
 
     @Transient

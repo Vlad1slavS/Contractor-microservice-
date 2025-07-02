@@ -1,6 +1,8 @@
 package io.github.contractormicroservice.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -8,7 +10,10 @@ import lombok.NoArgsConstructor;
  * Data Transfer Object для контрагента (для ответа пользователю)
  */
 @Data
+@AllArgsConstructor
 @NoArgsConstructor
+@Builder
+
 public class ContractorDTO {
 
     private String id;

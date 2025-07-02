@@ -3,6 +3,9 @@ package io.github.contractormicroservice.validator;
 import io.github.contractormicroservice.model.dto.CountryDTO;
 import org.springframework.stereotype.Component;
 
+/**
+ * Валидация входных данных страны (обязательные поля)
+ */
 @Component
 public class CountryValidator {
 

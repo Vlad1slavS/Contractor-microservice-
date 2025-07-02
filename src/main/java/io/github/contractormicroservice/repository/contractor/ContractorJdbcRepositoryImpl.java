@@ -4,7 +4,7 @@ import io.github.contractormicroservice.model.dto.CountryDTO;
 import io.github.contractormicroservice.model.dto.IndustryDTO;
 import io.github.contractormicroservice.model.dto.OrgFormDTO;
 import io.github.contractormicroservice.model.entity.Contractor;
-import io.github.contractormicroservice.model.entity.ContractorSearch;
+import io.github.contractormicroservice.model.entity.ContractorFilter;
 import io.github.contractormicroservice.model.entity.Pagination;
 
 import org.springframework.jdbc.core.RowMapper;
@@ -98,7 +98,7 @@ public class ContractorJdbcRepositoryImpl implements ContractorJdbcRepository {
     }
 
     @Override
-    public Pagination searchContractors(ContractorSearch request, Integer page, Integer limit) {
+    public Pagination searchContractors(ContractorFilter request, Integer page, Integer limit) {
 
         Map<String, Object> parameterSource = new HashMap<>();
         parameterSource.put("limit", limit);
@@ -145,7 +145,7 @@ public class ContractorJdbcRepositoryImpl implements ContractorJdbcRepository {
 
     }
 
-    private String searchFilters(ContractorSearch request, Map<String, Object> params) {
+    private String searchFilters(ContractorFilter request, Map<String, Object> params) {
         StringBuilder sql = new StringBuilder();
 
         if (request == null) {

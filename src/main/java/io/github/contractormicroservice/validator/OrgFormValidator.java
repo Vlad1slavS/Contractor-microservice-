@@ -3,6 +3,9 @@ package io.github.contractormicroservice.validator;
 import io.github.contractormicroservice.model.dto.OrgFormDTO;
 import org.springframework.stereotype.Component;
 
+/**
+ * Валидация входных данных организационных форм (обязательные поля)
+ */
 @Component
 public class OrgFormValidator {
 
