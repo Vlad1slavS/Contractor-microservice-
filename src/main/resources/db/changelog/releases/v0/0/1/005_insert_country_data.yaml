@@ -2,12 +2,7 @@ databaseChangeLog:
   - changeSet:
       id: 005-insert-country-data
       author: Vladislav Stepanov
-      comment: Insert initial country data from CSV
-      preConditions:
-        - onFail: MARK_RAN
-        - sqlCheck:
-            expectedResult: 0
-            sql: SELECT COUNT(*) FROM country
+      comment: Вставка данных в таблицу country
       changes:
         - loadData:
             file: db/changelog/data/country.csv
