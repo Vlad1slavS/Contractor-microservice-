@@ -1,6 +1,10 @@
 package io.github.contractormicroservice.model.dto;
 
 import io.github.contractormicroservice.model.entity.Country;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,9 +20,36 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Schema(
+        name = "CountryDTO",
+        description = "Объект передачи данных для страны",
+        example = """
+            {
+                "id": "RU",
+                    "name": "Россия"
+            }
+            """
+)
 public class CountryDTO {
 
+    @Schema(
+            description = "Уникальный идентификатор страны",
+            example = "RU",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    @NotBlank(message = "ID страны не может быть пустым")
+    @NotNull(message = "ID страны не может быть null")
+    @Size(min = 1, max = 5, message = "ID страны должен содержать от 1 до 5 букв")
     private String id;
+
+    @Schema(
+            description = "Название страны",
+            example = "Россия",
+            minLength = 1,
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    @NotBlank(message = "Название страны не может быть пустым")
+    @NotNull(message = "Название страны не может быть null")
     private String name;
 
     /**

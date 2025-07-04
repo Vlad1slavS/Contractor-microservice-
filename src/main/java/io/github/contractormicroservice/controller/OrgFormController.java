@@ -1,9 +1,17 @@
 package io.github.contractormicroservice.controller;
 
-import io.github.contractormicroservice.exception.EntityNotFoundException;
 import io.github.contractormicroservice.model.dto.OrgFormDTO;
 import io.github.contractormicroservice.service.OrgFormService;
-import io.github.contractormicroservice.validator.OrgFormValidator;
+import io.github.contractormicroservice.service.OrgFormServiceImpl;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,9 +23,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Класс для работы с api организационных форм
@@ -25,89 +31,204 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("api/v1/orgForm")
+@Tag(name = "OrgForms", description = "API для управления организационными формами")
 public class OrgFormController {
 
     private final OrgFormService orgFormService;
-    private final OrgFormValidator orgFormValidator;
 
-    public OrgFormController(OrgFormService orgFormService, OrgFormValidator orgFormValidator) {
+    public OrgFormController(OrgFormServiceImpl orgFormService) {
         this.orgFormService = orgFormService;
-        this.orgFormValidator = orgFormValidator;
     }
 
+    @Operation(summary = "Получение всех активных организационных форм")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200",
+                    description = "Список организационных форм успешно получен",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = OrgFormDTO.class),
+                            examples = @ExampleObject(value = """
+                                    [
+                                    {
+                                        "id": 1,
+                                        "name": "ООО"
+                                    },
+                                    {
+                                        "id": 2,
+                                        "name": "ИП"
+                                    }
+                                    ]
+                                    """
+                            )
+                    )
+            )
+    })
     @GetMapping("/all")
     public List<OrgFormDTO> getAll() {
         log.info("Request to get all org forms");
         return orgFormService.getAllActive();
     }
 
+    @Operation(summary = "Получить организационную форму по ID")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Организационная форма найдена",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = OrgFormDTO.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                    {
+                                        "id": 1,
+                                        "name": "ООО"
+                                    }
+                                    """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Организационная форма не найдена",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                        "message": "OrgForm not found with id: 999",
+                                        "timestamp": "timestamp"
+                                    }
+                                    """
+                            )
+                    )
+            )
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<?> getOne(@PathVariable Long id) {
+    public OrgFormDTO getOne(@PathVariable Long id) {
         log.info("Request to get org form by id: {}", id);
-        try {
-            OrgFormDTO orgFormDTO = orgFormService.getOne(id);
-            return ResponseEntity.ok(orgFormDTO);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(Map.of(
-                            "error", "Ошибка поиска организационной формы",
-                            "message", e.getMessage(),
-                            "timestamp", LocalDateTime.now(),
-                            "status", 404
-                    ));
-        }
+        return orgFormService.getOne(id);
     }
 
+    @Operation(summary = "Удалить организационную форму")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Организационная форма успешно удалена",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = OrgFormDTO.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                    {
+                                        "id": 1,
+                                        "name": "ООО"
+                                    }
+                                    """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Организационная форма не найдена",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = """
+                                    {
+                                        "message": "OrgForm not found with id: 999",
+                                        "timestamp": "timestamp"
+                                    }
+                                    """
+                            )
+                    )
+            )
+    })
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
+    public OrgFormDTO delete(@PathVariable Long id) {
         log.info("Request to delete org form with id: {}", id);
-        try {
-            OrgFormDTO deletedOrgForm = orgFormService.deleteOne(id);
-            log.info("Org form deleted: {}", deletedOrgForm);
-            return ResponseEntity.ok(deletedOrgForm);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(Map.of(
-                            "error", "Ошибка удаления организационной формы",
-                            "message", e.getMessage(),
-                            "timestamp", LocalDateTime.now(),
-                            "status", 404
-                    ));
-        }
+        OrgFormDTO deletedOrgForm = orgFormService.deleteOne(id);
+        log.info("Org form deleted: {}", deletedOrgForm);
+        return deletedOrgForm;
     }
 
+    @Operation(summary = "Сохранить организационную форму")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Организационная форма успешно сохранена",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = OrgFormDTO.class),
+                            examples = @ExampleObject(
+                                    name = "Сохраненная организационная форма",
+                                    value = """
+                                    {
+                                        "id": 1,
+                                        "name": "ООО"
+                                    }
+                                    """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Некорректные данные",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = """
+                                {
+                                    "error": "Ошибка валидации",
+                                    "message": "Переданные данные не прошли валидацию",
+                                    "timestamp": "timestamp",
+                                    "validationErrors": [
+                                        {
+                                            "field": "fieldName",
+                                            "error": "error message"
+                                        }
+                                    ]
+                                }
+                                """
+                            )
+                    )
+            )
+    })
     @PutMapping("/save")
-    public ResponseEntity<?> save(@RequestBody OrgFormDTO orgFormDTO) {
-        log.info("Validate org form: {}", orgFormDTO);
-        String errorMessage = orgFormValidator.validate(orgFormDTO);
-        if (errorMessage != null) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of(
-                            "error", "Ошибка при валидации организационной формы",
-                            "message", errorMessage,
-                            "timestamp", LocalDateTime.now(),
-                            "status", 400
-                    ));
-        }
-
+    public ResponseEntity<OrgFormDTO> save(
+            @Parameter(description = "Организационная форма",
+                    required = true,
+                    schema = @Schema(implementation = OrgFormDTO.class))
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Организационная форма",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = OrgFormDTO.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Создание новой организационной формы",
+                                            value = """
+                                            {
+                                                "name": "ПАО"
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Обновление существующей формы",
+                                            value = """
+                                            {
+                                                "id": 1,
+                                                "name": "ООО"
+                                            }
+                                            """
+                                    )
+                            }
+                    )
+            )
+            @Valid @RequestBody OrgFormDTO orgFormDTO) {
         log.info("Request to save org form: {}", orgFormDTO);
-        try {
-            OrgFormDTO savedOrgForm = orgFormService.save(orgFormDTO);
-            log.info("Org form saved: {}", savedOrgForm);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedOrgForm);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(Map.of(
-                            "error", "Ошибка сохранения организационной формы",
-                            "message", e.getMessage(),
-                            "timestamp", LocalDateTime.now(),
-                            "status", 400
-                    ));
-        }
+        OrgFormDTO savedOrgForm = orgFormService.save(orgFormDTO);
+        log.info("Org form saved: {}", savedOrgForm);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedOrgForm);
     }
 
 }

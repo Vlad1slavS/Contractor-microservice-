@@ -3,24 +3,25 @@ package io.github.contractormicroservice.controllerTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.contractormicroservice.controller.CountryController;
 import io.github.contractormicroservice.exception.EntityNotFoundException;
+import io.github.contractormicroservice.exception.GlobalExceptionHandler;
 import io.github.contractormicroservice.model.dto.CountryDTO;
-import io.github.contractormicroservice.service.CountryService;
-import io.github.contractormicroservice.validator.CountryValidator;
+import io.github.contractormicroservice.service.CountryServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import static org.mockito.ArgumentMatchers.any;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -32,25 +33,21 @@ public class CountryControllerTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock
-    private CountryService countryService;
+    private CountryServiceImpl countryServiceImpl;
 
-    @Mock
-    private CountryValidator countryValidator;
-
-    /**
-     * Экземпляр контроллера (с инжектом сервиса и валидатора (@Mock))
-     */
     @InjectMocks
     private CountryController countryController;
 
     @BeforeEach
     public void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(countryController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(countryController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .setValidator(new LocalValidatorFactoryBean())
+                .build();
     }
 
     /**
      * Тест для получения списка всех активных стран
-     * @throws Exception
      */
     @Test
     public void getAllCountries_ShouldReturnAllActiveCountries() throws Exception {
@@ -61,7 +58,7 @@ public class CountryControllerTest {
                 CountryDTO.builder().id("DE").name("Германия").build()
         );
 
-        when(countryService.getAllActive()).thenReturn(countries);
+        when(countryServiceImpl.getAllActive()).thenReturn(countries);
 
         mockMvc.perform(get("/api/v1/country/all"))
                 .andExpect(status().isOk())
@@ -74,12 +71,11 @@ public class CountryControllerTest {
                 .andExpect(jsonPath("$[2].id", is("DE")))
                 .andExpect(jsonPath("$[2].name", is("Германия")));
 
-        verify(countryService, times(1)).getAllActive();
+        verify(countryServiceImpl, times(1)).getAllActive();
     }
 
     /**
      * Тест поиска существующей страны по id
-     * @throws Exception
      */
     @Test
     public void getCountryById_ShouldReturnCountryById() throws Exception {
@@ -89,7 +85,7 @@ public class CountryControllerTest {
                 .name("Россия")
                 .build();
 
-        when(countryService.getOne("RU")).thenReturn(countryDTO);
+        when(countryServiceImpl.getOne("RU")).thenReturn(countryDTO);
 
         mockMvc.perform(get("/api/v1/country/{id}", "RU"))
                 .andExpect(status().isOk())
@@ -97,33 +93,32 @@ public class CountryControllerTest {
                 .andExpect(jsonPath("$.id", is("RU")))
                 .andExpect(jsonPath("$.name", is("Россия")));
 
-        verify(countryService, times(1)).getOne("RU");
+        verify(countryServiceImpl, times(1)).getOne("RU");
     }
 
     /**
      * Тест поиска несуществующей страны по id
-     * @throws Exception
+     * Теперь обрабатывается через @ControllerAdvice
      */
     @Test
     void getCountryById_ShouldReturn404_WhenNotFound() throws Exception {
 
-        when(countryService.getOne("XX"))
-                .thenThrow(new EntityNotFoundException("Country not found with id: " + "XX"));
+        when(countryServiceImpl.getOne("XX"))
+                .thenThrow(new EntityNotFoundException("Country not found with id: XX"));
 
         mockMvc.perform(get("/api/v1/country/{id}", "XX"))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.error", is("Ошибка поиска страны")))
+                .andExpect(jsonPath("$.error", is("Сущность не найдена")))
                 .andExpect(jsonPath("$.message", is("Country not found with id: XX")))
                 .andExpect(jsonPath("$.status", is(404)))
-                .andExpect(jsonPath("$.timestamp", notNullValue()));
+                .andExpect(jsonPath("$.path", notNullValue()));
 
-        verify(countryService, times(1)).getOne("XX");
+        verify(countryServiceImpl, times(1)).getOne("XX");
     }
 
     /**
-     * Тест создания новой страны
-     * @throws Exception
+     * Тест создания новой страны с валидными данными
      */
     @Test
     void saveCountry_ShouldCreateNewCountry_WhenValid() throws Exception {
@@ -133,8 +128,7 @@ public class CountryControllerTest {
                 .name("Франция")
                 .build();
 
-        when(countryValidator.validate(any(CountryDTO.class))).thenReturn(null);
-        when(countryService.save(any(CountryDTO.class))).thenReturn(inputCountry);
+        when(countryServiceImpl.save(any(CountryDTO.class))).thenReturn(inputCountry);
 
         mockMvc.perform(put("/api/v1/country/save")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -144,46 +138,105 @@ public class CountryControllerTest {
                 .andExpect(jsonPath("$.id", is("FR")))
                 .andExpect(jsonPath("$.name", is("Франция")));
 
-        verify(countryValidator, times(1))
-                .validate(any(CountryDTO.class));
-        verify(countryService, times(1))
-                .save(any(CountryDTO.class));
+        verify(countryServiceImpl, times(1)).save(any(CountryDTO.class));
     }
 
     /**
-     * Тест обновления страны по null id
-     * @throws Exception
+     * Тест валидации - null ID
      */
     @Test
-    void saveCountry_ShouldReturn400_WhenValidationFails() throws Exception {
+    void saveCountry_ShouldReturn400_WhenIdIsEmpty() throws Exception {
 
         CountryDTO invalidCountry = CountryDTO.builder()
-                .id("")
-                .name("")
+                .id(null)
+                .name("Франция")
                 .build();
-
-        when(countryValidator.validate(any(CountryDTO.class)))
-                .thenReturn("Country ID and name are required");
 
         mockMvc.perform(put("/api/v1/country/save")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidCountry)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.error", is("Ошибка при валидации страны")))
-                .andExpect(jsonPath("$.message", is("Country ID and name are required")))
-                .andExpect(jsonPath("$.status", is(400)))
-                .andExpect(jsonPath("$.timestamp", notNullValue()));
+                .andExpect(jsonPath("$.error", is("Ошибка валидации")))
+                .andExpect(jsonPath("$.message", is("Переданные данные не прошли валидацию")))
+                .andExpect(jsonPath("$.validationErrors.id", is("ID страны не может быть пустым")))
+                .andExpect(jsonPath("$.status", is(400)));
 
-        verify(countryValidator, times(1))
-                .validate(any(CountryDTO.class));
-        verify(countryService, never())
-                .save(any(CountryDTO.class));
+        verify(countryServiceImpl, never()).save(any(CountryDTO.class));
+    }
+
+    /**
+     * Тест валидации - пустое имя
+     */
+    @Test
+    void saveCountry_ShouldReturn400_WhenNameIsEmpty() throws Exception {
+
+        CountryDTO invalidCountry = CountryDTO.builder()
+                .id("FR")
+                .name("")
+                .build();
+
+        mockMvc.perform(put("/api/v1/country/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidCountry)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.error", is("Ошибка валидации")))
+                .andExpect(jsonPath("$.validationErrors.name", is("Название страны не может быть пустым")))
+                .andExpect(jsonPath("$.status", is(400)));
+
+        verify(countryServiceImpl, never()).save(any(CountryDTO.class));
+    }
+
+    /**
+     * Тест валидации - слишком длинный ID
+     */
+    @Test
+    void saveCountry_ShouldReturn400_WhenIdTooLong() throws Exception {
+
+        CountryDTO invalidCountry = CountryDTO.builder()
+                .id("FRFRFR") // 51 символ - превышает максимум
+                .name("Франция")
+                .build();
+
+        mockMvc.perform(put("/api/v1/country/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidCountry)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.error", is("Ошибка валидации")))
+                .andExpect(jsonPath("$.validationErrors.id", is("ID страны должен содержать от 1 до 5 букв")))
+                .andExpect(jsonPath("$.status", is(400)));
+
+        verify(countryServiceImpl, never()).save(any(CountryDTO.class));
+    }
+
+    /**
+     * Тест валидации - null значения
+     */
+    @Test
+    void saveCountry_ShouldReturn400_WhenFieldsAreNull() throws Exception {
+
+        CountryDTO invalidCountry = CountryDTO.builder()
+                .id(null)
+                .name(null)
+                .build();
+
+        mockMvc.perform(put("/api/v1/country/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidCountry)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.error", is("Ошибка валидации")))
+                .andExpect(jsonPath("$.validationErrors.id", is("ID страны не может быть пустым")))
+                .andExpect(jsonPath("$.validationErrors.name", is("Название страны не может быть пустым")))
+                .andExpect(jsonPath("$.status", is(400)));
+
+        verify(countryServiceImpl, never()).save(any(CountryDTO.class));
     }
 
     /**
      * Тест логического удаления страны по id
-     * @throws Exception
      */
     @Test
     public void deleteCountryById_ShouldDeleteCountryById() throws Exception {
@@ -193,7 +246,7 @@ public class CountryControllerTest {
                 .name("Россия")
                 .build();
 
-        when(countryService.deleteOne("RU")).thenReturn(deletedCountry);
+        when(countryServiceImpl.deleteOne("RU")).thenReturn(deletedCountry);
 
         mockMvc.perform(delete("/api/v1/country/delete/{id}", "RU"))
                 .andExpect(status().isOk())
@@ -201,9 +254,25 @@ public class CountryControllerTest {
                 .andExpect(jsonPath("$.id", is("RU")))
                 .andExpect(jsonPath("$.name", is("Россия")));
 
-        verify(countryService, times(1)).deleteOne("RU");
+        verify(countryServiceImpl, times(1)).deleteOne("RU");
     }
 
+    /**
+     * Тест удаления несуществующей страны
+     */
+    @Test
+    void deleteCountryById_ShouldReturn404_WhenNotFound() throws Exception {
+
+        when(countryServiceImpl.deleteOne("XX"))
+                .thenThrow(new EntityNotFoundException("Country not found with id: XX"));
+
+        mockMvc.perform(delete("/api/v1/country/delete/{id}", "XX"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.error", is("Сущность не найдена")))
+                .andExpect(jsonPath("$.message", is("Country not found with id: XX")))
+                .andExpect(jsonPath("$.status", is(404)));
+
+        verify(countryServiceImpl, times(1)).deleteOne("XX");
+    }
 }
-
-

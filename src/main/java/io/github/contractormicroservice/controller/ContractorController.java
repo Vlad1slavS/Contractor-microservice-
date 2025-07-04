@@ -5,7 +5,6 @@ import io.github.contractormicroservice.model.dto.ContractorDTO;
 import io.github.contractormicroservice.model.entity.Contractor;
 import io.github.contractormicroservice.model.entity.ContractorFilter;
 import io.github.contractormicroservice.model.entity.Pagination;
-import io.github.contractormicroservice.service.ContractorService;
 import io.github.contractormicroservice.validator.ContractorValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

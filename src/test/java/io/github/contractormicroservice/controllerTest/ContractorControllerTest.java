@@ -10,7 +10,6 @@ import io.github.contractormicroservice.model.dto.OrgFormDTO;
 import io.github.contractormicroservice.model.entity.Contractor;
 import io.github.contractormicroservice.model.entity.ContractorFilter;
 import io.github.contractormicroservice.model.entity.Pagination;
-import io.github.contractormicroservice.service.ContractorService;
 import io.github.contractormicroservice.validator.ContractorValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
