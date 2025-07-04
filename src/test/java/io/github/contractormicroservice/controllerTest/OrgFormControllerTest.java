@@ -3,9 +3,9 @@ package io.github.contractormicroservice.controllerTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.contractormicroservice.controller.OrgFormController;
 import io.github.contractormicroservice.exception.EntityNotFoundException;
+import io.github.contractormicroservice.exception.GlobalExceptionHandler;
 import io.github.contractormicroservice.model.dto.OrgFormDTO;
-import io.github.contractormicroservice.service.OrgFormService;
-import io.github.contractormicroservice.validator.OrgFormValidator;
+import io.github.contractormicroservice.service.OrgFormServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.util.Arrays;
 import java.util.List;
@@ -33,10 +34,7 @@ public class OrgFormControllerTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock
-    private OrgFormService orgFormService;
-
-    @Mock
-    private OrgFormValidator orgFormValidator;
+    private OrgFormServiceImpl orgFormService;
 
     /**
      * Экземпляр контроллера (с инжектом сервиса и валидатора (@Mock))
@@ -46,7 +44,10 @@ public class OrgFormControllerTest {
 
     @BeforeEach
     public void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(orgFormController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(orgFormController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .setValidator(new LocalValidatorFactoryBean())
+                .build();
     }
 
     /**
@@ -114,10 +115,9 @@ public class OrgFormControllerTest {
         mockMvc.perform(get("/api/v1/orgForm/{id}", 1000))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.error", is("Ошибка поиска организационной формы")))
+                .andExpect(jsonPath("$.error", is("Сущность не найдена")))
                 .andExpect(jsonPath("$.message", is("Org form not found with id: 1000")))
-                .andExpect(jsonPath("$.status", is(404)))
-                .andExpect(jsonPath("$.timestamp", notNullValue()));
+                .andExpect(jsonPath("$.status", is(404)));
 
         verify(orgFormService, times(1)).getOne(1000L);
     }
@@ -134,7 +134,6 @@ public class OrgFormControllerTest {
                 .name("Нотариус")
                 .build();
 
-        when(orgFormValidator.validate(any(OrgFormDTO.class))).thenReturn(null);
         when(orgFormService.save(any(OrgFormDTO.class))).thenReturn(inputOrgForm);
 
         mockMvc.perform(put("/api/v1/orgForm/save")
@@ -145,8 +144,6 @@ public class OrgFormControllerTest {
                 .andExpect(jsonPath("$.id", is(1)))
                 .andExpect(jsonPath("$.name", is("Нотариус")));
 
-        verify(orgFormValidator, times(1))
-                .validate(any(OrgFormDTO.class));
         verify(orgFormService, times(1))
                 .save(any(OrgFormDTO.class));
     }
@@ -173,6 +170,31 @@ public class OrgFormControllerTest {
 
         verify(orgFormService, times(1)).deleteOne(1L);
     }
+
+    /**
+     * Тест валидации - пустое название
+     */
+    @Test
+    void saveOrgForm_ShouldReturn400_WhenNameIsEmpty() throws Exception {
+
+        OrgFormDTO invalidOrgForm = OrgFormDTO.builder()
+                .id(1L)
+                .name("")
+                .build();
+
+        mockMvc.perform(put("/api/v1/orgForm/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidOrgForm)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.error", is("Ошибка валидации")))
+                .andExpect(jsonPath("$.message", is("Переданные данные не прошли валидацию")))
+                .andExpect(jsonPath("$.validationErrors.name", is("Название организационной формы не может быть пустым")))
+                .andExpect(jsonPath("$.status", is(400)));
+
+        verify(orgFormService, never()).save(any(OrgFormDTO.class));
+    }
+
 
 }
 

@@ -1,64 +1,39 @@
 package io.github.contractormicroservice.service;
 
-import io.github.contractormicroservice.exception.EntityNotFoundException;
+import io.github.contractormicroservice.model.dto.CountryDTO;
 import io.github.contractormicroservice.model.dto.OrgFormDTO;
-import io.github.contractormicroservice.model.entity.OrgForm;
-import io.github.contractormicroservice.repository.orgForm.OrgFormRepository;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
- * Сервис для работы с организационными формами (бизнес-логика)
+ * Интерфейс сервиса для работы с организационными формами
  */
-@Service
-public class OrgFormService {
+public interface OrgFormService {
 
-    private final OrgFormRepository orgFormRepository;
+    /**
+     * Получить все активные организационные формы
+     * @return список организационных форм
+     */
+    List<OrgFormDTO> getAllActive();
 
-    public OrgFormService(OrgFormRepository orgFormRepository) {
-        this.orgFormRepository = orgFormRepository;
-    }
+    /**
+     * Получить организационную форму по ID
+     * @param id идентификатор организационной формы
+     * @return организационная форма
+     */
+    OrgFormDTO getOne(Long id);
 
-    public List<OrgFormDTO> getAllActive() {
-        List<OrgForm> orgForms = orgFormRepository.findAllActive();
-        return OrgFormDTO.fromEntityList(orgForms);
-    }
+    /**
+     * Логически удалить организационную форму
+     * @param id идентификатор организационной формы
+     * @return удаленная организационная форма
+     */
+    OrgFormDTO deleteOne(Long id);
 
-    public OrgFormDTO getOne(Long id) {
-        OrgForm orgForm = orgFormRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("OrgForm not found with id: " + id));
-        return OrgFormDTO.fromEntity(orgForm);
-    }
-
-    public OrgFormDTO deleteOne(Long id) {
-        OrgForm orgForm = orgFormRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("OrgForm not found with id: " + id));
-        orgForm.setActive(false);
-        orgFormRepository.save(orgForm);
-        return OrgFormDTO.fromEntity(orgForm);
-    }
-
-    public OrgFormDTO save(OrgFormDTO orgFormDTO) {
-
-        if (orgFormDTO.getId() != null) {
-            Optional<OrgForm> existingOrgForm = orgFormRepository.findById(orgFormDTO.getId());
-
-            if (existingOrgForm.isPresent()) {
-                existingOrgForm.get().setName(orgFormDTO.getName());
-                orgFormRepository.save(existingOrgForm.get());
-                return OrgFormDTO.fromEntity(existingOrgForm.get());
-            } else {
-                throw new EntityNotFoundException("OrgForm not found with id: " + orgFormDTO.getId());
-            }
-        }
-        OrgForm newOrgForm = OrgForm.builder()
-                .name(orgFormDTO.getName())
-                .build();
-        OrgForm savedOrgForm = orgFormRepository.createOrgForm(newOrgForm);
-        return OrgFormDTO.fromEntity(savedOrgForm);
-    }
-
+    /**
+     * Сохранить или обновить организационную форму
+     * @param countryDTO данные организационной формы
+     * @return сохраненная организационная форма
+     */
+    OrgFormDTO save(OrgFormDTO countryDTO);
 }
-
