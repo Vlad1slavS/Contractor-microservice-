@@ -3,6 +3,7 @@ package io.github.contractormicroservice.controllerTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.contractormicroservice.controller.ContractorController;
 import io.github.contractormicroservice.exception.EntityNotFoundException;
+import io.github.contractormicroservice.exception.GlobalExceptionHandler;
 import io.github.contractormicroservice.model.dto.ContractorDTO;
 import io.github.contractormicroservice.model.dto.CountryDTO;
 import io.github.contractormicroservice.model.dto.IndustryDTO;
@@ -10,7 +11,7 @@ import io.github.contractormicroservice.model.dto.OrgFormDTO;
 import io.github.contractormicroservice.model.entity.Contractor;
 import io.github.contractormicroservice.model.entity.ContractorFilter;
 import io.github.contractormicroservice.model.entity.Pagination;
-import io.github.contractormicroservice.validator.ContractorValidator;
+import io.github.contractormicroservice.service.ContractorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.util.List;
 
@@ -38,15 +40,15 @@ public class ContractorControllerTest {
     @Mock
     private ContractorService contractorService;
 
-    @Mock
-    private ContractorValidator contractorValidator;
-
     @InjectMocks
     private ContractorController contractorController;
 
     @BeforeEach
     public void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(contractorController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(contractorController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .setValidator(new LocalValidatorFactoryBean())
+                .build();
     }
 
     @Test
@@ -88,10 +90,9 @@ public class ContractorControllerTest {
         mockMvc.perform(get("/api/v1/contractor/{id}", "XX"))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.error", is("Ошибка поиска контрагента по id")))
+                .andExpect(jsonPath("$.error", is("Сущность не найдена")))
                 .andExpect(jsonPath("$.message", is("Contractor not found with id: XX")))
-                .andExpect(jsonPath("$.status", is(404)))
-                .andExpect(jsonPath("$.timestamp", notNullValue()));
+                .andExpect(jsonPath("$.status", is(404)));
 
         verify(contractorService, times(1)).getOne("XX");
     }
@@ -103,44 +104,36 @@ public class ContractorControllerTest {
     @Test
     void saveContractor_ShouldCreateNewContractor() throws Exception {
 
-        CountryDTO country = CountryDTO.builder()
+        ContractorDTO inputContractor = ContractorDTO.builder()
                 .id("TEST_ID")
                 .name("TEST_NAME")
+                .country("RU")
+                .industry(1L)
+                .orgForm(1L)
                 .build();
 
-        IndustryDTO industry = IndustryDTO.builder()
-                .name("TEST_NAME")
-                .build();
-
-        OrgFormDTO orgForm = OrgFormDTO.builder()
-                .name("TEST_NAME")
-                .build();
-
-        Contractor inputContractor = Contractor.builder()
+        Contractor expectedContractor = Contractor.builder()
                 .id("TEST_ID")
                 .name("TEST_NAME")
-                .countryEntity(country)
-                .industryEntity(industry)
-                .orgFormEntity(orgForm)
+                .countryEntity(CountryDTO.builder().id("RU").name("Россия").build())
+                .industryEntity(IndustryDTO.builder().id(1L).name("TEST_NAME").build())
+                .orgFormEntity(OrgFormDTO.builder().id(1L).name("TEST_NAME").build())
                 .build();
 
-        when(contractorValidator.validate(any(ContractorDTO.class))).thenReturn(null);
-        when(contractorService.save(any(ContractorDTO.class))).thenReturn(inputContractor);
+        when(contractorService.save(inputContractor)).thenReturn(expectedContractor);
 
         mockMvc.perform(put("/api/v1/contractor/save")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(inputContractor)))
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(inputContractor.getId()))
-                .andExpect(jsonPath("$.name").value(inputContractor.getName()))
-                .andExpect(jsonPath("$.countryEntity.id").value(inputContractor.getCountryEntity().getId()))
-                .andExpect(jsonPath("$.countryEntity.name").value(inputContractor.getCountryEntity().getName()))
-                .andExpect(jsonPath("$.industryEntity.name").value(inputContractor.getIndustryEntity().getName()))
-                .andExpect(jsonPath("$.orgFormEntity.name").value(inputContractor.getOrgFormEntity().getName()));
+                .andExpect(jsonPath("$.id").value(expectedContractor.getId()))
+                .andExpect(jsonPath("$.name").value(expectedContractor.getName()))
+                .andExpect(jsonPath("$.countryEntity.id").value(expectedContractor.getCountryEntity().getId()))
+                .andExpect(jsonPath("$.countryEntity.name").value(expectedContractor.getCountryEntity().getName()))
+                .andExpect(jsonPath("$.industryEntity.name").value(expectedContractor.getIndustryEntity().getName()))
+                .andExpect(jsonPath("$.orgFormEntity.name").value(expectedContractor.getOrgFormEntity().getName()));
 
-        verify(contractorValidator, times(1))
-                .validate(any(ContractorDTO.class));
         verify(contractorService, times(1))
                 .save(any(ContractorDTO.class));
     }
